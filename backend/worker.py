@@ -2,6 +2,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -14,6 +15,7 @@ MODEL_NAME = os.getenv("WHISPER_MODEL", "small")
 OUTPUT_DIR = DATA_DIR / "jobs"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 _model = None
+_analysis_lock = threading.Lock()
 
 def _whisper():
     global _model
@@ -108,6 +110,11 @@ def _find_moments(rows, duration):
     return selected
 
 def analyse_job(job_id, url, language):
+    # Keep one Whisper/download job active per container to avoid exhausting phone-sized/free-tier resources.
+    with _analysis_lock:
+        _analyse_job(job_id, url, language)
+
+def _analyse_job(job_id, url, language):
     folder = OUTPUT_DIR / job_id
     folder.mkdir(parents=True, exist_ok=True)
     try:
@@ -156,9 +163,10 @@ def render_clips(job_id, selected_indices):
             lines.append(f"{cue_no}\n{_srt_time(cue_start)} --> {_srt_time(cue_end)}\n{row['text']}\n")
         subtitle.write_text("\n".join(lines), encoding="utf-8")
         output = folder / f"clip-{idx+1}.mp4"
-        vf = f"scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,subtitles={subtitle.as_posix()}"
+        subtitle_path = subtitle.as_posix().replace(":", "\\:").replace("'", "\\'")
+        vf = f"[0:v]split=2[bg][fg];[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=18:8[bg];[fg]scale=1080:1920:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,subtitles='{subtitle_path}'"
         _run(["ffmpeg", "-y", "-ss", str(start), "-i", str(video), "-t", str(end-start),
-              "-vf", vf, "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
+              "-filter_complex", vf, "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
               "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(output)])
         clips.append({"index": idx, "filename": output.name,
                       "url": f"/api/jobs/{job_id}/clips/{output.name}"})
