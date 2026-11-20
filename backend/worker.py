@@ -3,6 +3,9 @@ import os
 import re
 import subprocess
 import threading
+import wave
+
+import numpy as np
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -62,6 +65,24 @@ def _download(url, folder):
         raise RuntimeError("No usable video file was downloaded.")
     return files[0], duration
 
+def _audio_energy(audio_path):
+    # Measure two-second RMS windows from the mono 16 kHz analysis track.
+    values = []
+    with wave.open(str(audio_path), "rb") as wav:
+        rate = wav.getframerate()
+        chunk_frames = rate * 2
+        while True:
+            raw = wav.readframes(chunk_frames)
+            if not raw:
+                break
+            samples = np.frombuffer(raw, dtype=np.int16).astype(np.float32)
+            if samples.size:
+                values.append(float(np.sqrt(np.mean(samples * samples))))
+    if not values:
+        return []
+    baseline = max(float(np.median(values)), 1.0)
+    return [value / baseline for value in values]
+
 def _transcribe(video, language):
     audio = video.parent / "audio.wav"
     _run(["ffmpeg", "-y", "-i", str(video), "-vn", "-ac", "1", "-ar", "16000", str(audio)])
@@ -73,9 +94,9 @@ def _transcribe(video, language):
         text = (seg.text or "").strip()
         if text:
             rows.append({"start": float(seg.start), "end": float(seg.end), "text": text})
-    return rows, info.language or language
+    return rows, info.language or language, _audio_energy(audio)
 
-def _score_window(rows, start, end):
+def _score_window(rows, start, end, energy):
     text = " ".join(r["text"] for r in rows if r["start"] < end and r["end"] > start)
     lower = text.lower()
     cues = ["no way", "oh my god", "what", "bro", "lets go", "insane", "crazy",
@@ -84,18 +105,25 @@ def _score_window(rows, start, end):
     cue_hits = sum(1 for cue in cues if cue in lower)
     punctuation = min(text.count("!") + text.count("?"), 5)
     words = len(re.findall(r"\w+", text, flags=re.UNICODE))
-    score = cue_hits * 2.2 + punctuation * 0.55 + min(words / 42.0, 1.5)
+    first = max(0, int(start / 2))
+    last = min(len(energy), max(first + 1, int(end / 2) + 1))
+    activity = energy[first:last]
+    mean_activity = float(np.mean(activity)) if activity else 1.0
+    peak_activity = float(np.percentile(activity, 90)) if activity else 1.0
+    audio_score = min(max(mean_activity - 1.0, 0.0), 2.0) * 0.7
+    audio_score += min(max(peak_activity - 1.0, 0.0), 3.0) * 0.35
+    score = cue_hits * 2.2 + punctuation * 0.55 + min(words / 42.0, 1.5) + audio_score
     return score, text[:260]
 
-def _find_moments(rows, duration):
+def _find_moments(rows, duration, energy):
     candidates = []
     start = 0.0
     while start < duration:
         end = min(duration, start + 36.0)
-        score, excerpt = _score_window(rows, start, end)
+        score, excerpt = _score_window(rows, start, end, energy)
         if excerpt and score > 0:
             candidates.append({"start_seconds": round(start, 2), "end_seconds": round(end, 2),
-                               "score": round(score, 2), "reason": "Transcript activity score",
+                               "score": round(score, 2), "reason": "Transcript + audio activity score",
                                "excerpt": excerpt})
         start += 18.0
     candidates.sort(key=lambda x: x["score"], reverse=True)
@@ -121,9 +149,9 @@ def _analyse_job(job_id, url, language):
         update_job(job_id, status="downloading", progress=5, message="Fetching public VOD")
         video, duration = _download(url, folder)
         update_job(job_id, status="transcribing", progress=35, message="Transcribing speech")
-        rows, detected_language = _transcribe(video, language)
+        rows, detected_language, energy = _transcribe(video, language)
         update_job(job_id, status="ranking", progress=75, message="Ranking candidate moments")
-        moments = _find_moments(rows, duration)
+        moments = _find_moments(rows, duration, energy)
         (folder / "transcript.json").write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")
         update_job(job_id, status="ready", progress=100,
                    message=f"Found {len(moments)} candidates. Detected language: {detected_language}.",
