@@ -13,19 +13,24 @@
     <section class="hero">
       <p class="eyebrow">STREAM → MOMENTS → SHORTS</p>
       <h1>Find the moments<br><em>worth clipping.</em></h1>
-      <p class="sub">Analyse a creator-approved public VOD, review the strongest moments, and make vertical clips.</p>
+      <p class="sub">Analyse a public Twitch or Kick VOD, review suggested moments, and render vertical clips.</p>
     </section>
     <section class="panel">
       <label for="vod-url">Stream or VOD link</label>
       <input id="vod-url" type="url" placeholder="https://www.twitch.tv/videos/..." autocomplete="url">
-      <div class="row"><label for="language">Caption language</label><select id="language"><option value="auto">Auto detect (Hindi + English)</option><option value="hi">Hindi</option><option value="en">English</option></select></div>
+      <div class="row"><label for="language">Speech / caption language</label><select id="language"><option value="auto">Auto detect (Hindi + English)</option><option value="hi">Hindi</option><option value="en">English</option></select></div>
       <button id="analyse">Analyse VOD <span>→</span></button>
-      <p class="hint">Initial support target: public Twitch and Kick VODs. YouTube support is not enabled yet.</p>
-      <p class="notice">Only submit streams you are allowed to reuse. Private, subscriber-only, DRM-protected, and access-controlled content is not supported.</p>
+      <p class="hint">Current limit: public Twitch/Kick VODs up to 3 hours. Processing may take a while.</p>
+      <p class="notice">Only submit content you are allowed to reuse. Private, subscriber-only, DRM-protected, and access-controlled content is not supported.</p>
     </section>
     <section id="status" class="status" aria-live="polite" hidden></section>
-    <section id="moments" hidden><div class="section-head"><div><p class="eyebrow">ANALYSIS</p><h2>Candidate moments</h2></div><span id="count" class="count"></span></div><div id="moment-list"></div></section>
-    <footer>Built for mobile browsers · Processing requires a separate worker</footer>
+    <section id="moments" hidden>
+      <div class="section-head"><div><p class="eyebrow">ANALYSIS</p><h2>Choose your moments</h2></div><span id="count" class="count"></span></div>
+      <div id="moment-list"></div>
+      <button id="render" class="secondary">Render selected clips</button>
+    </section>
+    <section id="downloads" hidden><h2>Your clips</h2><div id="download-list"></div></section>
+    <footer>First detector uses speech transcription and text heuristics; it does not visually understand gameplay.</footer>
   </main>
   <script src="/app.js" defer></script>
 </body>
