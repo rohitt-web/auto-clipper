@@ -1,4 +1,69 @@
-const urlInput=document.querySelector('#vod-url');const language=document.querySelector('#language');const button=document.querySelector('#analyse');const statusBox=document.querySelector('#status');const moments=document.querySelector('#moments');const list=document.querySelector('#moment-list');const count=document.querySelector('#count');
+const urlInput=document.querySelector('#vod-url');
+const language=document.querySelector('#language');
+const analyseButton=document.querySelector('#analyse');
+const renderButton=document.querySelector('#render');
+const statusBox=document.querySelector('#status');
+const momentsSection=document.querySelector('#moments');
+const momentList=document.querySelector('#moment-list');
+const count=document.querySelector('#count');
+const downloads=document.querySelector('#downloads');
+const downloadList=document.querySelector('#download-list');
+let activeJob=null;
+let pollHandle=null;
 function showStatus(message){statusBox.hidden=false;statusBox.textContent=message;}
-function validSource(value){try{const u=new URL(value);return ['twitch.tv','www.twitch.tv','kick.com','www.kick.com'].includes(u.hostname);}catch{return false;}}
-button.addEventListener('click',async()=>{const vodUrl=urlInput.value.trim();if(!validSource(vodUrl)){showStatus('Enter a valid public Twitch or Kick VOD URL. YouTube links are not supported in this first build.');return;}button.disabled=true;moments.hidden=true;showStatus('Submitting analysis request…');try{const response=await fetch('/api/analyse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:vodUrl,caption_language:language.value})});const data=await response.json();if(!response.ok)throw new Error(data.detail||'The analysis service rejected this request.');showStatus(data.message||'Job accepted.');if(Array.isArray(data.moments)&&data.moments.length){list.replaceChildren(...data.moments.map((m,i)=>{const card=document.createElement('article');card.className='moment';const title=document.createElement('strong');title.textContent=m.title||`Moment ${i+1}`;const desc=document.createElement('p');desc.textContent=`${m.start_label||m.start_seconds+'s'} – ${m.end_label||m.end_seconds+'s'} · ${m.reason||'Suggested highlight'}`;card.append(title,desc);return card;}));count.textContent=`${data.moments.length} found`;moments.hidden=false;}}catch(error){showStatus(error.message||'Could not reach the analysis server.');}finally{button.disabled=false;}});
+function validSource(value){try{const u=new URL(value);return u.protocol==='https:'&&['twitch.tv','www.twitch.tv','kick.com','www.kick.com'].includes(u.hostname);}catch{return false;}}
+function timeLabel(seconds){const s=Math.floor(seconds||0);return Math.floor(s/3600)+':'+String(Math.floor(s%3600/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function renderMoments(items){
+  momentList.replaceChildren();
+  items.forEach((m,i)=>{
+    const card=document.createElement('article');card.className='moment';
+    const top=document.createElement('div');top.className='moment-top';
+    const check=document.createElement('input');check.type='checkbox';check.className='moment-check';check.value=String(i);check.setAttribute('aria-label','Select moment '+(i+1));
+    const title=document.createElement('strong');title.textContent=m.title||('Moment '+(i+1));
+    top.append(check,title);
+    const desc=document.createElement('p');desc.textContent=timeLabel(m.start_seconds)+' – '+timeLabel(m.end_seconds)+' · Score '+m.score;
+    const excerpt=document.createElement('p');excerpt.className='excerpt';excerpt.textContent=m.excerpt||'No transcript excerpt available.';
+    card.append(top,desc,excerpt);momentList.append(card);
+  });
+  count.textContent=items.length+' found';momentsSection.hidden=items.length===0;
+}
+async function pollJob(){
+  if(!activeJob)return;
+  try{
+    const response=await fetch('/api/jobs/'+activeJob);const data=await response.json();
+    if(!response.ok)throw new Error(data.detail||'Could not read job status.');
+    showStatus(data.message+' ('+data.progress+'%)');
+    if(data.status==='ready'){
+      clearInterval(pollHandle);pollHandle=null;renderMoments(data.moments||[]);
+      if(!data.moments?.length)showStatus('Transcription completed, but no candidate moments were detected. Try another VOD or language setting.');
+      analyseButton.disabled=false;
+    }else if(data.status==='complete'){
+      clearInterval(pollHandle);pollHandle=null;analyseButton.disabled=false;renderButton.disabled=false;downloadList.replaceChildren();
+      (data.clips||[]).forEach(clip=>{const link=document.createElement('a');link.href=clip.url;link.textContent='Download clip '+(clip.index+1);link.className='download-link';link.download=clip.filename;downloadList.append(link);});
+      downloads.hidden=false;showStatus(data.message);
+    }else if(data.status==='failed'){
+      clearInterval(pollHandle);pollHandle=null;analyseButton.disabled=false;renderButton.disabled=false;
+      showStatus(data.message+': '+(data.error||'Unknown error'));
+    }
+  }catch(error){clearInterval(pollHandle);pollHandle=null;analyseButton.disabled=false;renderButton.disabled=false;showStatus(error.message);}
+}
+analyseButton.addEventListener('click',async()=>{
+  const vodUrl=urlInput.value.trim();if(!validSource(vodUrl)){showStatus('Enter an HTTPS public Twitch or Kick VOD URL.');return;}
+  analyseButton.disabled=true;momentsSection.hidden=true;downloads.hidden=true;activeJob=null;showStatus('Submitting VOD…');
+  try{
+    const response=await fetch('/api/analyse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:vodUrl,caption_language:language.value})});
+    const data=await response.json();if(!response.ok)throw new Error(data.detail||'The analysis service rejected this request.');
+    activeJob=data.job_id;showStatus('VOD queued. Keep this page open while it is analysed.');
+    pollHandle=setInterval(pollJob,2500);await pollJob();
+  }catch(error){analyseButton.disabled=false;showStatus(error.message||'Could not reach the analysis server.');}
+});
+renderButton.addEventListener('click',async()=>{
+  if(!activeJob)return;const selected=[...document.querySelectorAll('.moment-check:checked')].map(el=>Number(el.value));
+  if(!selected.length){showStatus('Select at least one moment first.');return;}
+  renderButton.disabled=true;showStatus('Starting clip rendering…');
+  try{
+    const response=await fetch('/api/jobs/'+activeJob+'/clips',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({moment_indices:selected})});
+    const data=await response.json();if(!response.ok)throw new Error(data.detail||'Could not start rendering.');
+    showStatus(data.message);pollHandle=setInterval(pollJob,2500);
+  }catch(error){renderButton.disabled=false;showStatus(error.message);}
+});
