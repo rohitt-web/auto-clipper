@@ -1,21 +1,22 @@
 # Roadmap
 
-## Milestone 1 — Mobile-first interface
-- URL input for supported public Twitch/Kick VODs
-- Analysis status and candidate-moment list
-- Clip preview and download controls
+## Implemented in MVP
+- Mobile-first VOD submission interface.
+- Async job status polling.
+- Public Twitch/Kick VOD download with duration and size limits.
+- faster-whisper transcription with auto/hi/en selection.
+- Transcript heuristic candidate ranking.
+- User selection of up to six moments.
+- FFmpeg vertical export with blurred background, full gameplay frame, and burned-in subtitles.
+- SQLite job records and Docker Compose packaging.
 
-## Milestone 2 — Processing worker
-- Validate and fetch an authorized public VOD
-- Extract audio with FFmpeg
-- Transcribe Hindi/English speech
-- Rank candidate moments using transcript cues and audio activity
-- Render selected ranges as 9:16 MP4
+## Next engineering milestones
+1. Add audio energy / loudness analysis and Twitch/Kick chat activity signals.
+2. Add a visual highlight model for gameplay events and facecam reactions.
+3. Improve bilingual caption segmentation, punctuation, and editable subtitle timing.
+4. Add authenticated users, quotas, queue management, job expiry, and object storage.
+5. Add safe YouTube ingestion only through an explicitly permitted integration.
+6. Add deployment and smoke-test instructions for a persistent container host.
 
-## Milestone 3 — Captions and reliability
-- Hindi/English caption tracks
-- Caption timing and style controls
-- Per-job limits, cleanup, and error reporting
-
-## Technical reality
-A mobile browser cannot reliably download and analyse multi-hour streams itself. The worker needs server CPU, memory, disk, and FFmpeg. Free hosting tiers may sleep, time out, or restrict media workloads. The app should expose these limits instead of promising unlimited free processing.
+## Known quality boundary
+The current moment ranker is a transparent transcript heuristic. It is not a visual AI model and cannot reliably identify silent gameplay events or expressions visible only in the video.
