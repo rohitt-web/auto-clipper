@@ -24,9 +24,9 @@ This first version is a transcript-based highlight suggester. It does not yet un
 
 ## Run
 
-From the repository root, run: docker compose up --build
+From the repository root, copy .env.example to .env, set a strong private username and password, then run: docker compose up --build
 
-Open http://localhost:8000. The first transcription may take longer because the Whisper model must be downloaded. Persistent job data is stored in the clipper-data Docker volume.
+Open http://localhost:8000. Your browser will ask for the username and password. Never commit the .env file or share its password. The first transcription may take longer because the Whisper model must be downloaded. Persistent job data is stored in the clipper-data Docker volume.
 
 ## Configuration
 
@@ -53,7 +53,7 @@ Open http://localhost:8000. The first transcription may take longer because the 
 - Maximum VOD duration is 3 hours; default download cap is 6 GiB.
 - One analysis runs at a time per container. Rendering is CPU-intensive.
 - This is a single-instance MVP. It needs a proper queue, authentication, per-user quotas, job expiry/cleanup, and persistent object storage before public multi-user deployment.
-- The API currently has no login or rate limiting. Do not expose it publicly without adding access control and abuse protection.
+- The app uses shared HTTP Basic authentication. Set APP_USERNAME and APP_PASSWORD before use; the service refuses requests if they are missing. There is not yet per-user accounts or rate limiting.
 - Free cloud hosts generally cannot promise the CPU, RAM, disk, execution time, and persistent storage needed for multi-hour video analysis.
 
 ## Content and platform rules
