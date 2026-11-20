@@ -60,7 +60,7 @@ def validate_source(url):
         raise HTTPException(status_code=400, detail="Only HTTPS public Twitch and Kick VOD URLs are supported.")
 
 @app.get("/api/health")
-def health(_: str = Depends(require_auth)):
+def health():
     return {"status": "ok", "worker_ready": True,
             "max_vod_seconds": int(os.getenv("MAX_VOD_SECONDS", "10800"))}
 
