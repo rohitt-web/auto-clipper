@@ -1,6 +1,7 @@
 import os
 import re
 import uuid
+from pathlib import Path
 from urllib.parse import urlparse
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
@@ -12,6 +13,22 @@ from worker import analyse_job, render_clips
 
 app = FastAPI(title="Auto Clipper AI", version="0.2.0")
 init_db()
+WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+
+@app.get("/", include_in_schema=False)
+def home():
+    index = WEB_DIR / "index.html"
+    if not index.is_file():
+        raise HTTPException(status_code=503, detail="Web client files are not installed in this deployment.")
+    return FileResponse(index)
+
+@app.get("/style.css", include_in_schema=False)
+def stylesheet():
+    return FileResponse(WEB_DIR / "style.css", media_type="text/css")
+
+@app.get("/app.js", include_in_schema=False)
+def javascript():
+    return FileResponse(WEB_DIR / "app.js", media_type="application/javascript")
 
 class AnalyseRequest(BaseModel):
     url: HttpUrl
