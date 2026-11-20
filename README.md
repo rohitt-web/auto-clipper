@@ -52,7 +52,7 @@ Open http://localhost:8000. Your browser will ask for the username and password.
 - Only public Twitch and Kick VOD URLs are accepted. YouTube is not implemented.
 - Maximum VOD duration is 3 hours; default download cap is 6 GiB.
 - One analysis runs at a time per container. Rendering is CPU-intensive.
-- This is a single-instance MVP. It needs a proper queue, authentication, per-user quotas, job expiry/cleanup, and persistent object storage before public multi-user deployment.
+- This is a single-instance MVP. It needs a proper queue, per-user accounts, quotas, job expiry/cleanup, and persistent object storage before public multi-user deployment.
 - The app uses shared HTTP Basic authentication. Set APP_USERNAME and APP_PASSWORD before use; the service refuses requests if they are missing. There is not yet per-user accounts or rate limiting.
 - Free cloud hosts generally cannot promise the CPU, RAM, disk, execution time, and persistent storage needed for multi-hour video analysis.
 
