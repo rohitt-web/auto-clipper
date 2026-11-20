@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: auto-clipper
+    runtime: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_USERNAME
+        sync: false
+      - key: APP_PASSWORD
+        sync: false
+      - key: DATA_DIR
+        value: /tmp/auto-clipper-data
+      - key: MAX_VOD_SECONDS
+        value: "600"
+      - key: MAX_DOWNLOAD_BYTES
+        value: "536870912"
+      - key: WHISPER_MODEL
+        value: tiny
+      - key: WHISPER_DEVICE
+        value: cpu
+      - key: WHISPER_COMPUTE_TYPE
+        value: int8
