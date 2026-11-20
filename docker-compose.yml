@@ -7,6 +7,8 @@ services:
       - "8000:8000"
     environment:
       DATA_DIR: /data
+      APP_USERNAME: ${APP_USERNAME}
+      APP_PASSWORD: ${APP_PASSWORD}
       MAX_VOD_SECONDS: 10800
       MAX_DOWNLOAD_BYTES: 6442450944
       WHISPER_MODEL: small
