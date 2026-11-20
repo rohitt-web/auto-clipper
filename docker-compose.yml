@@ -1,0 +1,19 @@
+services:
+  auto-clipper:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATA_DIR: /data
+      MAX_VOD_SECONDS: 10800
+      MAX_DOWNLOAD_BYTES: 6442450944
+      WHISPER_MODEL: small
+      WHISPER_DEVICE: cpu
+      WHISPER_COMPUTE_TYPE: int8
+    volumes:
+      - clipper-data:/data
+    restart: unless-stopped
+volumes:
+  clipper-data:
