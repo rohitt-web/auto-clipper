@@ -4,30 +4,45 @@ import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+import secrets
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, HttpUrl, Field
 
 from store import DATA_DIR, create_job, get_job, init_db, update_job
 from worker import analyse_job, render_clips
 
-app = FastAPI(title="Auto Clipper AI", version="0.2.0")
+app = FastAPI(title="Auto Clipper AI", version="0.3.0")
 init_db()
+security = HTTPBasic()
+
+def require_auth(credentials: HTTPBasicCredentials = Depends(security)):
+    expected_user = os.getenv("APP_USERNAME", "")
+    expected_password = os.getenv("APP_PASSWORD", "")
+    if not expected_user or not expected_password:
+        raise HTTPException(status_code=503, detail="Set APP_USERNAME and APP_PASSWORD before using the app.")
+    user_ok = secrets.compare_digest(credentials.username, expected_user)
+    password_ok = secrets.compare_digest(credentials.password, expected_password)
+    if not (user_ok and password_ok):
+        raise HTTPException(status_code=401, detail="Incorrect username or password.",
+                            headers={"WWW-Authenticate": "Basic"})
+    return credentials.username
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
 @app.get("/", include_in_schema=False)
-def home():
+def home(_: str = Depends(require_auth)):
     index = WEB_DIR / "index.html"
     if not index.is_file():
         raise HTTPException(status_code=503, detail="Web client files are not installed in this deployment.")
     return FileResponse(index)
 
 @app.get("/style.css", include_in_schema=False)
-def stylesheet():
+def stylesheet(_: str = Depends(require_auth)):
     return FileResponse(WEB_DIR / "style.css", media_type="text/css")
 
 @app.get("/app.js", include_in_schema=False)
-def javascript():
+def javascript(_: str = Depends(require_auth)):
     return FileResponse(WEB_DIR / "app.js", media_type="application/javascript")
 
 class AnalyseRequest(BaseModel):
@@ -45,12 +60,12 @@ def validate_source(url):
         raise HTTPException(status_code=400, detail="Only HTTPS public Twitch and Kick VOD URLs are supported.")
 
 @app.get("/api/health")
-def health():
+def health(_: str = Depends(require_auth)):
     return {"status": "ok", "worker_ready": True,
             "max_vod_seconds": int(os.getenv("MAX_VOD_SECONDS", "10800"))}
 
 @app.post("/api/analyse", status_code=202)
-def analyse(request: AnalyseRequest, background: BackgroundTasks):
+def analyse(request: AnalyseRequest, background: BackgroundTasks, _: str = Depends(require_auth)):
     url = str(request.url)
     validate_source(url)
     job_id = uuid.uuid4().hex
@@ -59,14 +74,14 @@ def analyse(request: AnalyseRequest, background: BackgroundTasks):
     return {"job_id": job_id, "status": "queued", "message": "VOD queued for analysis."}
 
 @app.get("/api/jobs/{job_id}")
-def job_status(job_id: str):
+def job_status(job_id: str, _: str = Depends(require_auth)):
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found.")
     return {k: job[k] for k in ("id", "status", "progress", "message", "duration", "moments", "clips", "error")}
 
 @app.post("/api/jobs/{job_id}/clips", status_code=202)
-def create_clips(job_id: str, request: RenderRequest, background: BackgroundTasks):
+def create_clips(job_id: str, request: RenderRequest, background: BackgroundTasks, _: str = Depends(require_auth)):
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found.")
@@ -88,7 +103,7 @@ def _render_task(job_id, indices):
                    error=str(exc)[:1500])
 
 @app.get("/api/jobs/{job_id}/clips/{filename}")
-def download_clip(job_id: str, filename: str):
+def download_clip(job_id: str, filename: str, _: str = Depends(require_auth)):
     if not re.fullmatch(r"clip-\d+\.mp4", filename):
         raise HTTPException(status_code=400, detail="Invalid filename.")
     path = DATA_DIR / "jobs" / job_id / filename
