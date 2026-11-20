@@ -8,7 +8,7 @@ A mobile-first browser app and containerized worker for analysing creator-approv
 - FastAPI backend with SQLite job records.
 - yt-dlp ingestion for eligible public Twitch/Kick VODs.
 - faster-whisper speech transcription with automatic, Hindi, or English language selection.
-- Baseline candidate ranking using transcript cue words, punctuation, and speech density.
+- Baseline candidate ranking using transcript cue words, punctuation, speech density, and two-second audio RMS activity.
 - FFmpeg rendering to 1080x1920 with the full landscape frame preserved over a blurred background and burned-in subtitles.
 - Docker Compose deployment.
 
