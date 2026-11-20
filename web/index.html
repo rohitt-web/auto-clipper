@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101116">
+  <title>Auto Clipper AI</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="top"><div class="brand-mark">AC</div><div><strong>Auto Clipper</strong><span>AI highlight finder</span></div><span class="tag">BETA</span></header>
+    <section class="hero">
+      <p class="eyebrow">STREAM → MOMENTS → SHORTS</p>
+      <h1>Find the moments<br><em>worth clipping.</em></h1>
+      <p class="sub">Analyse a creator-approved public VOD, review the strongest moments, and make vertical clips.</p>
+    </section>
+    <section class="panel">
+      <label for="vod-url">Stream or VOD link</label>
+      <input id="vod-url" type="url" placeholder="https://www.twitch.tv/videos/..." autocomplete="url">
+      <div class="row"><label for="language">Caption language</label><select id="language"><option value="auto">Auto detect (Hindi + English)</option><option value="hi">Hindi</option><option value="en">English</option></select></div>
+      <button id="analyse">Analyse VOD <span>→</span></button>
+      <p class="hint">Initial support target: public Twitch and Kick VODs. YouTube support is not enabled yet.</p>
+      <p class="notice">Only submit streams you are allowed to reuse. Private, subscriber-only, DRM-protected, and access-controlled content is not supported.</p>
+    </section>
+    <section id="status" class="status" aria-live="polite" hidden></section>
+    <section id="moments" hidden><div class="section-head"><div><p class="eyebrow">ANALYSIS</p><h2>Candidate moments</h2></div><span id="count" class="count"></span></div><div id="moment-list"></div></section>
+    <footer>Built for mobile browsers · Processing requires a separate worker</footer>
+  </main>
+  <script src="/app.js" defer></script>
+</body>
+</html>
