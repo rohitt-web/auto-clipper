@@ -1,12 +1,12 @@
 # Auto Clipper AI
 
-A mobile-first browser app and containerized worker for analysing creator-approved public Twitch and Kick VODs, suggesting highlight timestamps, and rendering selected clips as vertical MP4s.
+A mobile-first browser app and containerized worker for analysing creator-approved public YouTube, Twitch, and Kick VODs, suggesting highlight timestamps, and rendering selected clips as vertical MP4s.
 
 ## Current implementation
 
 - Mobile web interface for VOD submission, progress polling, moment selection, and clip downloads.
 - FastAPI backend with SQLite job records.
-- yt-dlp ingestion for eligible public Twitch/Kick VODs.
+- yt-dlp ingestion for eligible public YouTube, Twitch, and Kick VODs.
 - faster-whisper speech transcription with automatic, Hindi, or English language selection.
 - Baseline candidate ranking using transcript cue words, punctuation, speech density, and two-second audio RMS activity.
 - FFmpeg rendering to 1080x1920 with the full landscape frame preserved over a blurred background and burned-in subtitles.
@@ -33,7 +33,7 @@ Open http://localhost:8000. Your browser will ask for the username and password.
 | Variable | Default | Meaning |
 |---|---:|---|
 | DATA_DIR | /data | Persistent jobs and SQLite database |
-| MAX_VOD_SECONDS | 10800 | Maximum VOD duration (3 hours) |
+| MAX_VOD_SECONDS | 10800 | Maximum VOD duration in seconds (3 hours locally; Render blueprint overrides to 900 seconds) |
 | MAX_DOWNLOAD_BYTES | 6442450944 | Approximate download size limit (6 GiB) |
 | WHISPER_MODEL | small | faster-whisper model |
 | WHISPER_DEVICE | cpu | CPU or CUDA |
@@ -49,8 +49,8 @@ Open http://localhost:8000. Your browser will ask for the username and password.
 
 ## Current limitations
 
-- Only public Twitch and Kick VOD URLs are accepted. YouTube is not implemented.
-- Maximum VOD duration is 3 hours; default download cap is 6 GiB.
+- Public YouTube, Twitch, and Kick VOD URLs are accepted through yt-dlp. Actual availability depends on platform restrictions and the source being accessible without bypassing access controls.
+- The Render blueprint limits VODs to 15 minutes and 512 MiB downloads to reduce resource use. Local deployments default to 3 hours and 6 GiB unless overridden.
 - One analysis runs at a time per container. Rendering is CPU-intensive.
 - This is a single-instance MVP. It needs a proper queue, per-user accounts, quotas, job expiry/cleanup, and persistent object storage before public multi-user deployment.
 - The app uses shared HTTP Basic authentication. Set APP_USERNAME and APP_PASSWORD before use; the service refuses requests if they are missing. There is not yet per-user accounts or rate limiting.
