@@ -55,14 +55,16 @@ class RenderRequest(BaseModel):
 def validate_source(url):
     parsed = urlparse(url)
     host = (parsed.hostname or "").lower()
-    allowed = host == "twitch.tv" or host.endswith(".twitch.tv") or host == "kick.com" or host.endswith(".kick.com")
+    allowed = (host == "twitch.tv" or host.endswith(".twitch.tv") or
+               host == "kick.com" or host.endswith(".kick.com") or
+               host == "youtube.com" or host.endswith(".youtube.com") or host == "youtu.be")
     if parsed.scheme != "https" or not allowed:
-        raise HTTPException(status_code=400, detail="Only HTTPS public Twitch and Kick VOD URLs are supported.")
+        raise HTTPException(status_code=400, detail="Only HTTPS public YouTube, Twitch, and Kick VOD URLs are supported.")
 
 @app.get("/api/health")
 def health():
     return {"status": "ok", "worker_ready": True,
-            "max_vod_seconds": int(os.getenv("MAX_VOD_SECONDS", "10800"))}
+            "max_vod_seconds": int(os.getenv("MAX_VOD_SECONDS", "900"))}
 
 @app.post("/api/analyse", status_code=202)
 def analyse(request: AnalyseRequest, background: BackgroundTasks, _: str = Depends(require_auth)):
