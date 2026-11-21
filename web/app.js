@@ -11,7 +11,7 @@ const downloadList=document.querySelector('#download-list');
 let activeJob=null;
 let pollHandle=null;
 function showStatus(message){statusBox.hidden=false;statusBox.textContent=message;}
-function validSource(value){try{const u=new URL(value);return u.protocol==='https:'&&['twitch.tv','www.twitch.tv','kick.com','www.kick.com'].includes(u.hostname);}catch{return false;}}
+function validSource(value){try{const u=new URL(value);const h=u.hostname.toLowerCase();return u.protocol==='https:'&&(h==='twitch.tv'||h.endsWith('.twitch.tv')||h==='kick.com'||h.endsWith('.kick.com')||h==='youtube.com'||h.endsWith('.youtube.com')||h==='youtu.be');}catch{return false;}}
 function timeLabel(seconds){const s=Math.floor(seconds||0);return Math.floor(s/3600)+':'+String(Math.floor(s%3600/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 function renderMoments(items){
   momentList.replaceChildren();
@@ -48,7 +48,7 @@ async function pollJob(){
   }catch(error){clearInterval(pollHandle);pollHandle=null;analyseButton.disabled=false;renderButton.disabled=false;showStatus(error.message);}
 }
 analyseButton.addEventListener('click',async()=>{
-  const vodUrl=urlInput.value.trim();if(!validSource(vodUrl)){showStatus('Enter an HTTPS public Twitch or Kick VOD URL.');return;}
+  const vodUrl=urlInput.value.trim();if(!validSource(vodUrl)){showStatus('Enter an HTTPS public YouTube, Twitch, or Kick VOD URL.');return;}
   analyseButton.disabled=true;momentsSection.hidden=true;downloads.hidden=true;activeJob=null;showStatus('Submitting VOD…');
   try{
     const response=await fetch('/api/analyse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:vodUrl,caption_language:language.value})});
