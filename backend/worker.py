@@ -60,7 +60,7 @@ def _download(url, folder):
         if duration <= 0:
             raise ValueError("Could not determine VOD duration.")
         if duration > MAX_DURATION_SECONDS:
-            raise ValueError(f"VOD exceeds the {MAX_DURATION_SECONDS/3600:.0f}-hour limit.")
+            raise ValueError(f"VOD exceeds the configured {MAX_DURATION_SECONDS // 60}-minute limit.")
         ydl.download([url])
     files = [p for p in folder.glob("source.*") if p.suffix.lower() in {".mp4", ".mkv", ".webm", ".mov"}]
     if not files:
