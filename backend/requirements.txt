@@ -5,3 +5,4 @@ numpy>=1.26,<3.0
 yt-dlp[default]>=2025.1.15
 yt-dlp-ejs
 faster-whisper>=1.1,<2.0
+bgutil-ytdlp-pot-provider
