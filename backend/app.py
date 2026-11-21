@@ -28,7 +28,7 @@ def require_auth(credentials: HTTPBasicCredentials = Depends(security)):
         raise HTTPException(status_code=401, detail="Incorrect username or password.",
                             headers={"WWW-Authenticate": "Basic"})
     return credentials.username
-WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+WEB_DIR = Path(__file__).resolve().parent / "web"
 
 @app.get("/", include_in_schema=False)
 def home(_: str = Depends(require_auth)):
