@@ -53,6 +53,7 @@ def _download(url, folder):
         "no_warnings": True,
         "restrictfilenames": True,
         "max_filesize": int(os.getenv("MAX_DOWNLOAD_BYTES", str(6 * 1024**3))),
+        "extractor_args": {"youtube": {"player_client": ["web_embedded", "web_safari"]}},
     }
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=False)
