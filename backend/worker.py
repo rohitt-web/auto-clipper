@@ -36,9 +36,11 @@ def _run(command):
 def _safe_source(url):
     parsed = urlparse(url)
     host = (parsed.hostname or "").lower()
-    allowed = host == "twitch.tv" or host.endswith(".twitch.tv") or host == "kick.com" or host.endswith(".kick.com")
+    allowed = (host == "twitch.tv" or host.endswith(".twitch.tv") or
+               host == "kick.com" or host.endswith(".kick.com") or
+               host == "youtube.com" or host.endswith(".youtube.com") or host == "youtu.be")
     if parsed.scheme != "https" or not allowed:
-        raise ValueError("Only HTTPS public Twitch and Kick VOD links are supported.")
+        raise ValueError("Only HTTPS public YouTube, Twitch, and Kick VOD links are supported.")
 
 def _download(url, folder):
     _safe_source(url)
