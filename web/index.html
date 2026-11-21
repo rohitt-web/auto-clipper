@@ -13,15 +13,15 @@
     <section class="hero">
       <p class="eyebrow">STREAM → MOMENTS → SHORTS</p>
       <h1>Find the moments<br><em>worth clipping.</em></h1>
-      <p class="sub">Analyse a public Twitch or Kick VOD, review suggested moments, and render vertical clips.</p>
+      <p class="sub">Analyse a public YouTube, Twitch, or Kick VOD, review suggested moments, and render vertical clips.</p>
     </section>
     <section class="panel">
       <label for="vod-url">Stream or VOD link</label>
-      <input id="vod-url" type="url" placeholder="https://www.twitch.tv/videos/..." autocomplete="url">
+      <input id="vod-url" type="url" placeholder="https://www.youtube.com/watch?v=... or Twitch/Kick VOD link" autocomplete="url">
       <div class="row"><label for="language">Speech / caption language</label><select id="language"><option value="auto">Auto detect (Hindi + English)</option><option value="hi">Hindi</option><option value="en">English</option></select></div>
       <button id="analyse">Analyse VOD <span>→</span></button>
-      <p class="hint">Current limit: public Twitch/Kick VODs up to 3 hours. Processing may take a while.</p>
-      <p class="notice">Only submit content you are allowed to reuse. Private, subscriber-only, DRM-protected, and access-controlled content is not supported.</p>
+      <p class="hint">Current Render limit: public YouTube, Twitch, or Kick VODs up to 15 minutes. Processing may take a while; free hosting may run out of memory.</p>
+      <p class="notice">Only submit content you have permission to download, edit, and republish. Private, subscriber-only, DRM-protected, and access-controlled content is not supported.</p>
     </section>
     <section id="status" class="status" aria-live="polite" hidden></section>
     <section id="moments" hidden>
