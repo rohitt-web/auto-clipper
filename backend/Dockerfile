@@ -14,4 +14,4 @@ COPY web/ /app/web/
 ENV DATA_DIR=/data
 VOLUME ["/data"]
 EXPOSE 8000
-CMD ["sh", "-c", "cd /opt/bgutil-ytdlp-pot-provider/server/node_modules && deno run --allow-env --allow-net --allow-ffi=. --allow-read=. ../src/main.ts --host 127.0.0.1 & exec uvicorn app:app --host 0.0.0.0 --port ${PORT:-10000}"]
+CMD ["sh", "-c", "cd /opt/bgutil-ytdlp-pot-provider/server/node_modules && deno run --allow-env --allow-net --allow-ffi=. --allow-read=. ../src/main.ts --host 127.0.0.1 & POT_PID=$!; sleep 2; if ! kill -0 $POT_PID 2>/dev/null; then echo POT_PROVIDER_START_FAILED; wait $POT_PID; exit 1; fi; echo POT_PROVIDER_PROCESS_STARTED; exec uvicorn app:app --host 0.0.0.0 --port ${PORT:-10000}"]
