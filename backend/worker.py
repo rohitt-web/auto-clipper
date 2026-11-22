@@ -4,6 +4,8 @@ import re
 import subprocess
 import threading
 import wave
+import urllib.error
+import urllib.request
 
 import numpy as np
 from pathlib import Path
@@ -42,8 +44,25 @@ def _safe_source(url):
     if parsed.scheme != "https" or not allowed:
         raise ValueError("Only HTTPS public YouTube, Twitch, and Kick VOD links are supported.")
 
+def _probe_pot_provider():
+    """Log whether the local bgutil HTTP provider is actually reachable."""
+    url = "http://127.0.0.1:4416/"
+    try:
+        with urllib.request.urlopen(url, timeout=3) as response:
+            status = response.status
+            body = response.read(300).decode("utf-8", "replace")
+    except urllib.error.HTTPError as exc:
+        status = exc.code
+        body = exc.read(300).decode("utf-8", "replace")
+    except Exception as exc:
+        print(f"POT_PROVIDER_DIAGNOSTIC reachable=false error={type(exc).__name__}: {exc}", flush=True)
+        return False
+    print(f"POT_PROVIDER_DIAGNOSTIC reachable=true root_status={status} body={body!r}", flush=True)
+    return status == 400
+
 def _download(url, folder):
     _safe_source(url)
+    _probe_pot_provider()
     opts = {
         "outtmpl": str(folder / "source.%(ext)s"),
         "format": "best[height<=1080]/best",
