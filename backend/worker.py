@@ -49,14 +49,15 @@ def _download(url, folder):
         "format": "best[height<=1080]/best",
         "merge_output_format": "mp4",
         "noplaylist": True,
-        "quiet": True,
-        "no_warnings": True,
+        "quiet": False,
+        "no_warnings": False,
         "restrictfilenames": True,
         "max_filesize": int(os.getenv("MAX_DOWNLOAD_BYTES", str(6 * 1024**3))),
         "extractor_args": {
             "youtube": {"player_client": ["mweb", "tv", "web_safari"]},
-            "youtubepot-bgutilscript": {"server_home": "/opt/bgutil-ytdlp-pot-provider/server"},
+            "youtubepot-bgutilhttp": {"base_url": "http://127.0.0.1:4416"},
         },
+        "verbose": True,
     }
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=False)
