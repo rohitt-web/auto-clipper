@@ -14,4 +14,4 @@ COPY web/ /app/web/
 ENV DATA_DIR=/data
 VOLUME ["/data"]
 EXPOSE 8000
-CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-10000}"]
+CMD ["sh", "-c", "cd /opt/bgutil-ytdlp-pot-provider/server/node_modules && deno run --allow-env --allow-net --allow-ffi=. --allow-read=. ../src/main.ts --host 127.0.0.1 & exec uvicorn app:app --host 0.0.0.0 --port ${PORT:-10000}"]
