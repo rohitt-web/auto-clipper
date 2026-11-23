@@ -10,6 +10,17 @@ const downloads=document.querySelector('#downloads');
 const downloadList=document.querySelector('#download-list');
 let activeJob=null;
 let pollHandle=null;
+async function readApiResponse(response){
+  const raw=await response.text();
+  let data;
+  try{data=raw?JSON.parse(raw):{};}
+  catch{
+    const preview=raw.replace(/\\s+/g,' ').slice(0,300);
+    throw new Error('Server returned a non-JSON response (HTTP '+response.status+'): '+(preview||'empty response'));
+  }
+  if(!response.ok)throw new Error(data.detail||data.message||('Request failed (HTTP '+response.status+').'));
+  return data;
+}
 function showStatus(message){statusBox.hidden=false;statusBox.textContent=message;}
 function validSource(value){try{const u=new URL(value);const h=u.hostname.toLowerCase();return u.protocol==='https:'&&(h==='twitch.tv'||h.endsWith('.twitch.tv')||h==='kick.com'||h.endsWith('.kick.com')||h==='youtube.com'||h.endsWith('.youtube.com')||h==='youtu.be');}catch{return false;}}
 function timeLabel(seconds){const s=Math.floor(seconds||0);return Math.floor(s/3600)+':'+String(Math.floor(s%3600/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
@@ -30,8 +41,7 @@ function renderMoments(items){
 async function pollJob(){
   if(!activeJob)return;
   try{
-    const response=await fetch('/api/jobs/'+activeJob);const data=await response.json();
-    if(!response.ok)throw new Error(data.detail||'Could not read job status.');
+    const response=await fetch('/api/jobs/'+activeJob);const data=await readApiResponse(response);
     showStatus(data.message+' ('+data.progress+'%)');
     if(data.status==='ready'){
       clearInterval(pollHandle);pollHandle=null;renderMoments(data.moments||[]);
@@ -52,7 +62,7 @@ analyseButton.addEventListener('click',async()=>{
   analyseButton.disabled=true;momentsSection.hidden=true;downloads.hidden=true;activeJob=null;showStatus('Submitting VOD…');
   try{
     const response=await fetch('/api/analyse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:vodUrl,caption_language:language.value})});
-    const data=await response.json();if(!response.ok)throw new Error(data.detail||'The analysis service rejected this request.');
+    const data=await readApiResponse(response);
     activeJob=data.job_id;showStatus('VOD queued. Keep this page open while it is analysed.');
     pollHandle=setInterval(pollJob,2500);await pollJob();
   }catch(error){analyseButton.disabled=false;showStatus(error.message||'Could not reach the analysis server.');}
@@ -63,7 +73,7 @@ renderButton.addEventListener('click',async()=>{
   renderButton.disabled=true;showStatus('Starting clip rendering…');
   try{
     const response=await fetch('/api/jobs/'+activeJob+'/clips',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({moment_indices:selected})});
-    const data=await response.json();if(!response.ok)throw new Error(data.detail||'Could not start rendering.');
+    const data=await readApiResponse(response);
     showStatus(data.message);pollHandle=setInterval(pollJob,2500);
   }catch(error){renderButton.disabled=false;showStatus(error.message);}
 });
